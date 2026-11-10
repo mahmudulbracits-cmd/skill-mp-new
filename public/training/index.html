@@ -833,7 +833,7 @@ function renderSesDetail(){
    <h2 style="font-size:20px">${esc(s.topic)}</h2>
    <div class="meta">${esc(fmtDate(s.date,s.dateText))}${s.dateText&&s.date&&!/^\d{4}-/.test(s.dateText)&&s.dateText.includes('&')?` (${esc(s.dateText)})`:''}${s.location?` · ${esc(s.location)}`:''}</div>
    <div class="mini3"><div><b>${s._n}</b><span>Attendees</span></div><div><b>${fmtH(+s.hours||0)}</b><span>Hours</span></div><div><b>${fmt(Math.round(s._lh))}</b><span>Learner-hours</span></div><div><b>${dep.length}</b><span>Departments</span></div></div>
-   <div class="actions"><button class="btn sm" type="button" data-act="att-xlsx">Download attendees (.xlsx)</button>${s._n?`<button class="btn sm" type="button" data-sescert="${esc(s.id)}">Certificates (PDF)</button>`:''}${isEditor?`<button class="btn sm" type="button" data-act="ses-edit">Edit</button><button class="btn sm danger ${ui.delArm===s.id?'armed':''}" type="button" data-act="ses-del">${ui.delArm===s.id?'Confirm delete':'Delete'}</button>`:''}</div>
+   <div class="actions"><button class="btn sm" type="button" data-act="att-xlsx">Download attendees (.xlsx)</button>${s._n?`<button class="btn sm" type="button" data-sescert="${esc(s.id)}">Certificates (PDF)</button>`:''}${isEditor&&isAcad(s)?`<button class="btn sm primary" type="button" data-enrol="${esc(s.id)}">Enrolment</button>`:''}${isEditor?`<button class="btn sm" type="button" data-act="ses-edit">Edit</button><button class="btn sm danger ${ui.delArm===s.id?'armed':''}" type="button" data-act="ses-del">${ui.delArm===s.id?'Confirm delete':'Delete'}</button>`:''}</div>
    <div class="sec"><h3><span>Trainer${s.trainers.length>1?'s':''}</span></h3>${s.trainers.length?s.trainers.map(t=>`<div><button class="linkbtn" type="button" data-trn="${esc(lc(t))}"><b>${esc(t)}</b></button><div class="meta">${esc([s.trainerDesig,s.org].filter(Boolean).join(' · '))}</div></div>`).join(''):'<p class="hint">Not recorded.</p>'}
     ${s.profile?`<details style="margin-top:6px"><summary class="hint" style="cursor:pointer">Trainer profile</summary><p style="font-size:13px;white-space:pre-wrap">${esc(s.profile)}</p></details>`:''}</div>
    ${s.objective?`<div class="sec"><h3><span>Objective</span></h3><p style="margin:0;font-size:13.5px">${esc(s.objective)}</p></div>`:''}
@@ -2078,7 +2078,7 @@ function courseDetailHTML(c,M){
    <div class="grid2" style="margin-top:12px"><div>${c.desc?`<p style="margin:0 0 10px;white-space:pre-wrap">${esc(c.desc)}</p>`:''}${c.outcomes?`<h3 style="font-size:13px;margin-bottom:4px">Learners will be able to</h3><ul class="lines">${String(c.outcomes).split('\n').filter(Boolean).map(o=>`<li>${esc(o.replace(/^[-•*]\s*/,''))}</li>`).join('')}</ul>`:''}</div>
    <div>${c.audience?`<p style="margin:0 0 6px"><b>Who it's for:</b> ${esc(c.audience)}</p>`:''}${c.prereq?`<p style="margin:0 0 6px"><b>Before joining:</b> ${esc(c.prereq)}</p>`:''}<p style="margin:0"><b>${ppl.size}</b> people have completed a batch.</p></div></div>
    <h3 style="font-size:13px;margin:14px 0 6px">Batches</h3>${bs.length?`<div class="tblwrap" style="max-height:none"><table><thead><tr><th>Date</th><th>Batch</th><th>Enrolled</th><th>Attended</th><th>Completion</th><th>Rating</th><th>Status</th><th></th></tr></thead><tbody>
-   ${bs.map(x=>`<tr><td class="date">${esc(fmtDate(x.s.date,x.s.dateText))}</td><td><button class="linkbtn" type="button" data-ses="${esc(x.s.id)}">${esc(x.s.batch||x.s.id)}</button></td><td>${x.b.enrolled.length}${x.b.cap?`/${x.b.cap}`:''}${x.b.wait.length?` <span class="hint">+${x.b.wait.length} waiting</span>`:''}</td><td>${x.b.came.size}</td><td>${x.b.compRate==null?'—':x.b.compRate+'%'}</td><td>${x.s.feedback&&x.s.feedback.avg?fmt(x.s.feedback.avg,1):'—'}</td><td>${stPill(x.b.st)}</td><td>${isEditor&&x.b.st!=='Completed'?`<button class="btn sm" type="button" data-enrol="${esc(x.s.id)}">Enrolment</button>`:''}</td></tr>`).join('')}</tbody></table></div>`:'<p class="hint">No batches yet.</p>'}</div>`;
+   ${bs.map(x=>`<tr><td class="date">${esc(fmtDate(x.s.date,x.s.dateText))}</td><td><button class="linkbtn" type="button" data-ses="${esc(x.s.id)}">${esc(x.s.batch||x.s.id)}</button></td><td>${x.b.enrolled.length}${x.b.cap?`/${x.b.cap}`:''}${x.b.wait.length?` <span class="hint">+${x.b.wait.length} waiting</span>`:''}</td><td>${x.b.came.size}</td><td>${x.b.compRate==null?'—':x.b.compRate+'%'}</td><td>${x.s.feedback&&x.s.feedback.avg?fmt(x.s.feedback.avg,1):'—'}</td><td>${stPill(x.b.st)}</td><td>${isEditor?`<button class="btn sm" type="button" data-enrol="${esc(x.s.id)}">Enrolment</button>`:''}</td></tr>`).join('')}</tbody></table></div>`:'<p class="hint">No batches yet.</p>'}</div>`;
 }
 function courseForm(id,preset){
   const c=id?RAW.course[id]:null, P=preset||{}, v=(k,d='')=>esc(c?(c[k]??d):(P[k]??d));
@@ -2306,7 +2306,9 @@ async function saveSess(old0){let old=old0;
   const before={};(((RAW.att[old0?old0.id:id]||{}).rows)||[]).forEach(r=>before[MD.rp(r[0])]=r);
   const rows=P.rows.map(r=>before[r[0]]?[before[r[0]][0],before[r[0]][1]||r[1],before[r[0]][2]||r[2],before[r[0]][3]||r[3],r[4],1]:r);
   try{await putMany('sess',[s],{note:`${old?'Edited':'Added'} session ${id}: ${topic}`});await putMany('att',[{id,rows}],{quiet:true});
-    closeModal();ui.sSel=id;await loadAll(true);toast('Session saved')}catch(e){err.textContent=e.message||'Could not save.'}
+    closeModal();ui.sSel=id;await loadAll(true);toast('Session saved');
+    // A new Academy batch with no attendees yet goes straight to enrolment.
+    if(!old&&s.courseId&&!rows.length&&isEditor) enrolForm(id)}catch(e){err.textContent=e.message||'Could not save.'}
 }
 function indForm(id,preset){
   const i=id?RAW.ind[id]:null, v=(k,d='')=>esc(i?(i[k]??d):(preset&&preset[k]!=null?preset[k]:d));
